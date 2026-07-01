@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Braces,
   Cable,
@@ -58,6 +58,10 @@ slot5 RELAY 1 1
 sleep 100
 slot1/DI/1/0
 slot5/RELAY/1/0`;
+
+const ioScriptTest = `slot1 DI 1 1
+slot3 AI 2 42
+slot5 RELAY 3 1`;
 
 const site = "demo";
 const node = "linux-sim-001";
@@ -154,6 +158,30 @@ export default function App() {
   const latestTopic = latest ? latest.topic : "site/demo/node/linux-sim-001/io/-/-/event";
   const latestPayload = latest ? JSON.stringify(latest.payload, null, 2) : "{}";
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("test") !== "io-script") {
+      return;
+    }
+
+    replaceSlots(buildInitialSlots());
+    setEvents([]);
+
+    let timeMs = 0;
+    let ok = true;
+    const testLines = cleanScriptLines(ioScriptTest);
+
+    for (const line of testLines) {
+      const result = applyLine(line, timeMs);
+      timeMs = result.timeMs;
+      ok = ok && result.ok;
+    }
+
+    setScript(ioScriptTest);
+    setNowMs(timeMs);
+    setLineIndex(testLines.length);
+    setStatus(ok ? "script test done" : "script test error");
+  }, []);
+
   function replaceSlots(nextSlots) {
     slotsRef.current = nextSlots;
     setSlots(nextSlots);
@@ -245,7 +273,7 @@ export default function App() {
         t_ms: timeMs
       }
     };
-    setEvents((current) => [event, ...current].slice(0, 160));
+    setEvents((current) => [event, ...current].slice(0, 100));
   }
 
   function setSlotValue(slotNoText, typeLabel, pointText, valueText, timeMs) {

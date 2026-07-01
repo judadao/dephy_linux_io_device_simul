@@ -71,6 +71,7 @@ Useful web commands:
 ```sh
 make -f Makefile.linux web-build
 make -f Makefile.linux web-render-check
+make -f Makefile.linux web-io-script-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
@@ -101,3 +102,6 @@ Trigger controls:
 - `Start Loop` executes the script repeatedly using the configured loop count.
 - `Infinite` keeps looping until `Stop`.
 - `Stop` cancels the active loop immediately.
+
+The web IO script check opens `http://127.0.0.1:8088/?test=io-script` and
+verifies that a DI, AI, and RELAY command produce event log output.

@@ -6,7 +6,7 @@ OUTDIR  ?= build_out
 LIB := $(OUTDIR)/liblinux_io_device_simul.a
 OBJS := $(OUTDIR)/src/io_device_simul.o
 
-.PHONY: all structure-audit direct-test test zephyr-metadata demo web-install web-build web web-render-check clean
+.PHONY: all structure-audit direct-test test zephyr-metadata demo web-install web-build web web-render-check web-io-script-check clean
 
 all: $(LIB) $(OUTDIR)/linux_io_device_simul
 
@@ -52,6 +52,9 @@ web:
 
 web-render-check:
 	OUTDIR=$(OUTDIR) ./scripts/test_web_render.sh
+
+web-io-script-check:
+	OUTDIR=$(OUTDIR) ./scripts/test_web_io_script.sh
 
 clean:
 	rm -rf $(OUTDIR)
