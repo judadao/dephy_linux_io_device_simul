@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Activity,
   Braces,
@@ -280,4 +280,3 @@ export default function App() {
     </main>
   );
 }
-

@@ -23,6 +23,8 @@ but product-specific matrix or workflow logic should stay in product repos.
 - `make -f Makefile.linux demo` runs the bundled script-driven demo.
 - `make -f Makefile.linux web-install` installs the Vite/React web dependencies.
 - `make -f Makefile.linux web` starts the local dashboard.
+- `make -f Makefile.linux web-render-check` checks the served dashboard with
+  headless Chrome when the web server is already running.
 
 ## Style
 

@@ -70,6 +70,7 @@ Useful web commands:
 
 ```sh
 make -f Makefile.linux web-build
+make -f Makefile.linux web-render-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
