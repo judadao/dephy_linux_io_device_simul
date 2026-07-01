@@ -6,7 +6,7 @@ OUTDIR  ?= build_out
 LIB := $(OUTDIR)/liblinux_io_device_simul.a
 OBJS := $(OUTDIR)/src/io_device_simul.o
 
-.PHONY: all structure-audit direct-test test zephyr-metadata demo prepare-local-trigger-scenarios web-install web-build web web-render-check web-io-script-check web-import-export-run-check clean
+.PHONY: all structure-audit direct-test test zephyr-metadata demo prepare-local-trigger-scenarios web-install web-build web web-render-check web-io-script-check web-import-export-run-check web-trigger-import-check clean
 
 all: $(LIB) $(OUTDIR)/linux_io_device_simul
 
@@ -61,6 +61,9 @@ web-io-script-check:
 
 web-import-export-run-check:
 	OUTDIR=$(OUTDIR) ./scripts/test_web_import_export_run.sh
+
+web-trigger-import-check:
+	OUTDIR=$(OUTDIR) ./scripts/test_web_trigger_import.sh
 
 clean:
 	rm -rf $(OUTDIR)

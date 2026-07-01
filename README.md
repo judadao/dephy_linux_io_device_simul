@@ -74,6 +74,7 @@ make -f Makefile.linux prepare-local-trigger-scenarios
 make -f Makefile.linux web-render-check
 make -f Makefile.linux web-io-script-check
 make -f Makefile.linux web-import-export-run-check
+make -f Makefile.linux web-trigger-import-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
@@ -123,3 +124,7 @@ Generated locations:
 `make -f Makefile.linux web-import-export-run-check` generates the local
 scenario JSON, loads it through the dashboard import path, validates export
 shape, runs the trigger script, and checks the resulting event log.
+
+`Import` accepts both full scene JSON files and plain `.trigger` / `.txt`
+trigger scripts. Plain trigger scripts are loaded into the Trigger Script
+editor without replacing the slot config.

@@ -117,6 +117,10 @@ cat > "$public_dir/import_export_run.json" <<'JSON'
 }
 JSON
 
+cp "$local_dir/basic_io.trigger" "$public_dir/basic_io.trigger"
+cp "$local_dir/import_export_run.trigger" "$public_dir/import_export_run.trigger"
+cp "$local_dir/twenty_slot_interleaved.trigger" "$public_dir/twenty_slot_interleaved.trigger"
+
 cat > "$local_dir/README.local.txt" <<'TXT'
 This directory is intentionally ignored by git.
 
@@ -127,6 +131,7 @@ Files:
 
 Served import fixture:
 - web/public/local_trigger_scenarios/import_export_run.json
+- web/public/local_trigger_scenarios/*.trigger
 
 Regenerate:
   ./scripts/prepare_local_trigger_scenarios.sh

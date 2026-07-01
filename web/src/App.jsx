@@ -64,6 +64,7 @@ slot3 AI 2 42
 slot5 RELAY 3 1`;
 
 const importExportRunTestPath = "/local_trigger_scenarios/import_export_run.json";
+const triggerImportTestPath = "/local_trigger_scenarios/twenty_slot_interleaved.trigger";
 
 const site = "demo";
 const node = "linux-sim-001";
@@ -213,6 +214,18 @@ export default function App() {
           setStatus(runOk ? "import export run test done" : "import export run test error");
         })
         .catch(() => setStatus("import export run test error"));
+      return;
+    }
+
+    if (testMode === "trigger-import") {
+      fetch(triggerImportTestPath)
+        .then((response) => response.text())
+        .then((text) => {
+          setScript(text);
+          setLineIndex(0);
+          setStatus(text.includes("slot20 RELAY 5 1") ? "trigger import test done" : "trigger import test error");
+        })
+        .catch(() => setStatus("trigger import test error"));
     }
   }, []);
 
@@ -296,8 +309,23 @@ export default function App() {
     const reader = new FileReader();
 
     reader.onload = () => {
+      const text = String(reader.result || "");
+      const trimmed = text.trim();
+
+      if (!trimmed) {
+        setStatus("import error");
+        return;
+      }
+
+      if (!trimmed.startsWith("{")) {
+        setScript(text);
+        setLineIndex(0);
+        setStatus("script imported");
+        return;
+      }
+
       try {
-        const config = JSON.parse(String(reader.result));
+        const config = JSON.parse(trimmed);
         setStatus(applySceneConfig(config) ? "imported" : "import error");
       } catch {
         setStatus("import error");
@@ -644,7 +672,7 @@ export default function App() {
           ref={importInputRef}
           className="hidden-file"
           type="file"
-          accept="application/json,.json"
+          accept="application/json,.json,.trigger,.txt,text/plain"
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) {
