@@ -4,7 +4,9 @@ import {
   Cable,
   Download,
   FileJson,
+  Infinity,
   ListRestart,
+  Pause,
   Plus,
   Play,
   RotateCcw,
@@ -118,7 +120,12 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState("idle");
   const [newSlotType, setNewSlotType] = useState("di");
+  const [loopCount, setLoopCount] = useState(1);
+  const [infiniteLoop, setInfiniteLoop] = useState(false);
+  const [running, setRunning] = useState(false);
   const importInputRef = useRef(null);
+  const runTimerRef = useRef(null);
+  const stopRunRef = useRef(false);
 
   const lines = useMemo(() => cleanScriptLines(script), [script]);
   const modules = useMemo(() => modulesFromSlots(slots), [slots]);
@@ -354,6 +361,13 @@ export default function App() {
     return { ok: false, timeMs };
   }
 
+  function clearRunTimer() {
+    if (runTimerRef.current) {
+      clearTimeout(runTimerRef.current);
+      runTimerRef.current = null;
+    }
+  }
+
   function stepScript() {
     if (lineIndex >= lines.length) {
       setStatus("done");
@@ -384,6 +398,68 @@ export default function App() {
     setStatus(ok ? "done" : "error");
   }
 
+  function startLoopRun() {
+    const runLines = cleanScriptLines(script);
+    const totalLoops = infiniteLoop ? Infinity : Math.max(1, Number(loopCount) || 1);
+
+    clearRunTimer();
+    stopRunRef.current = false;
+    setRunning(true);
+    setStatus(infiniteLoop ? "looping" : `loop 1/${totalLoops}`);
+    setLineIndex(0);
+
+    let timeMs = nowMs;
+    let index = 0;
+    let loop = 1;
+
+    const tick = () => {
+      if (stopRunRef.current) {
+        setRunning(false);
+        setStatus("stopped");
+        return;
+      }
+
+      if (index >= runLines.length) {
+        if (loop >= totalLoops) {
+          setRunning(false);
+          setStatus("done");
+          setLineIndex(runLines.length);
+          return;
+        }
+        loop += 1;
+        index = 0;
+        setStatus(infiniteLoop ? `loop ${loop}` : `loop ${loop}/${totalLoops}`);
+      }
+
+      const line = runLines[index];
+      const before = timeMs;
+      const result = applyLine(line, timeMs);
+      const delay = Math.max(0, Math.min(result.timeMs - before, 5000));
+
+      timeMs = result.timeMs;
+      setNowMs(timeMs);
+      setLineIndex(index + 1);
+
+      if (!result.ok) {
+        setRunning(false);
+        setStatus("error");
+        return;
+      }
+
+      index += 1;
+      runTimerRef.current = setTimeout(tick, delay);
+    };
+
+    tick();
+  }
+
+  function stopLoopRun() {
+    stopRunRef.current = true;
+    clearRunTimer();
+    setRunning(false);
+    setStatus("stopped");
+  }
+
   function clickSlot(slot) {
     const nextValue = slot.mode === "digital" ? (slot.value > 0 ? 0 : 1) : slot.value > 0 ? 0 : 100;
     setSlotValue(String(slot.slotNo), slot.label, String(slot.point), String(nextValue), nowMs);
@@ -391,6 +467,7 @@ export default function App() {
   }
 
   function resetSimulator() {
+    stopLoopRun();
     replaceSlots(buildInitialSlots());
     setNowMs(0);
     setLineIndex(0);
@@ -500,11 +577,37 @@ export default function App() {
                 <Play size={17} />
                 <span>Run</span>
               </button>
+              <button type="button" onClick={running ? stopLoopRun : startLoopRun} title={running ? "Stop loop" : "Start loop"}>
+                {running ? <Pause size={17} /> : <Play size={17} />}
+                <span>{running ? "Stop" : "Start"}</span>
+              </button>
               <button type="button" onClick={resetSimulator} title="Reset simulator">
                 <RotateCcw size={17} />
                 <span>Reset</span>
               </button>
             </div>
+          </div>
+          <div className="loop-controls">
+            <label>
+              <span>Loop</span>
+              <input
+                type="number"
+                min="1"
+                max="999"
+                value={loopCount}
+                disabled={infiniteLoop}
+                onChange={(event) => setLoopCount(event.target.value)}
+              />
+            </label>
+            <label className="check-control">
+              <input
+                type="checkbox"
+                checked={infiniteLoop}
+                onChange={(event) => setInfiniteLoop(event.target.checked)}
+              />
+              <Infinity size={17} />
+              <span>Infinite</span>
+            </label>
           </div>
           <textarea
             id="scriptEditor"

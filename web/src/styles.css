@@ -297,7 +297,42 @@ select {
 
 .button-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.loop-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #111922;
+}
+
+.loop-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.loop-controls input[type="number"] {
+  width: 76px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 10px;
+  background: #0b1118;
+  color: var(--text);
+}
+
+.check-control input {
+  width: 16px;
+  height: 16px;
 }
 
 .io-grid {
