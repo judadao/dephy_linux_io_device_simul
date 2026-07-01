@@ -94,3 +94,10 @@ space separated forms are both supported.
 Use `Export` to download a JSON scene containing module slots, channel values,
 and the script. Use `Import` to load the same JSON later for fast test scenario
 switching.
+
+Trigger controls:
+
+- `Step` executes one script line.
+- `Start Loop` executes the script repeatedly using the configured loop count.
+- `Infinite` keeps looping until `Stop`.
+- `Stop` cancels the active loop immediately.

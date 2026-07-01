@@ -140,6 +140,13 @@ export default function App() {
   const importInputRef = useRef(null);
   const runTimerRef = useRef(null);
   const stopRunRef = useRef(false);
+  const runnerRef = useRef({
+    lines: [],
+    index: 0,
+    loop: 1,
+    totalLoops: 1,
+    timeMs: 0
+  });
 
   const lines = useMemo(() => cleanScriptLines(script), [script]);
   const modules = useMemo(() => modulesFromSlots(slots), [slots]);
@@ -334,7 +341,7 @@ export default function App() {
       if (!slotType) {
         return { ok: false, timeMs };
       }
-      const module = modules.find((item) => item.type === slotType.id);
+      const module = modulesFromSlots(slotsRef.current).find((item) => item.type === slotType.id);
       if (!module) {
         return { ok: false, timeMs };
       }
@@ -395,64 +402,57 @@ export default function App() {
     return result.ok;
   }
 
-  function runScript() {
-    let timeMs = nowMs;
-    let index = lineIndex;
-    let ok = true;
-
-    setStatus("running");
-    while (index < lines.length && ok) {
-      const result = applyLine(lines[index], timeMs);
-      timeMs = result.timeMs;
-      ok = result.ok;
-      index += 1;
-    }
-    setNowMs(timeMs);
-    setLineIndex(index);
-    setStatus(ok ? "done" : "error");
-  }
-
   function startLoopRun() {
     const runLines = cleanScriptLines(script);
     const totalLoops = infiniteLoop ? Infinity : Math.max(1, Number(loopCount) || 1);
 
+    if (runLines.length === 0) {
+      setStatus("empty script");
+      return;
+    }
+
     clearRunTimer();
     stopRunRef.current = false;
+    runnerRef.current = {
+      lines: runLines,
+      index: 0,
+      loop: 1,
+      totalLoops,
+      timeMs: nowMs
+    };
     setRunning(true);
     setStatus(infiniteLoop ? "looping" : `loop 1/${totalLoops}`);
     setLineIndex(0);
 
-    let timeMs = nowMs;
-    let index = 0;
-    let loop = 1;
-
     const tick = () => {
+      const runner = runnerRef.current;
+
       if (stopRunRef.current) {
         setRunning(false);
         setStatus("stopped");
         return;
       }
 
-      if (index >= runLines.length) {
-        if (loop >= totalLoops) {
+      if (runner.index >= runner.lines.length) {
+        if (runner.loop >= runner.totalLoops) {
           setRunning(false);
           setStatus("done");
-          setLineIndex(runLines.length);
+          setLineIndex(runner.lines.length);
           return;
         }
-        loop += 1;
-        index = 0;
-        setStatus(infiniteLoop ? `loop ${loop}` : `loop ${loop}/${totalLoops}`);
+        runner.loop += 1;
+        runner.index = 0;
+        setStatus(runner.totalLoops === Infinity ? `loop ${runner.loop}` : `loop ${runner.loop}/${runner.totalLoops}`);
       }
 
-      const line = runLines[index];
-      const before = timeMs;
-      const result = applyLine(line, timeMs);
-      const delay = Math.max(0, Math.min(result.timeMs - before, 5000));
+      const line = runner.lines[runner.index];
+      const before = runner.timeMs;
+      const result = applyLine(line, runner.timeMs);
+      const delay = Math.max(0, Math.min(result.timeMs - before, 10000));
 
-      timeMs = result.timeMs;
-      setNowMs(timeMs);
-      setLineIndex(index + 1);
+      runner.timeMs = result.timeMs;
+      setNowMs(runner.timeMs);
+      setLineIndex(runner.index + 1);
 
       if (!result.ok) {
         setRunning(false);
@@ -460,7 +460,7 @@ export default function App() {
         return;
       }
 
-      index += 1;
+      runner.index += 1;
       runTimerRef.current = setTimeout(tick, delay);
     };
 
@@ -587,13 +587,9 @@ export default function App() {
                 <SkipForward size={17} />
                 <span>Step</span>
               </button>
-              <button type="button" onClick={runScript} title="Run script">
-                <Play size={17} />
-                <span>Run</span>
-              </button>
               <button type="button" onClick={running ? stopLoopRun : startLoopRun} title={running ? "Stop loop" : "Start loop"}>
                 {running ? <Pause size={17} /> : <Play size={17} />}
-                <span>{running ? "Stop" : "Start"}</span>
+                <span>{running ? "Stop" : "Start Loop"}</span>
               </button>
               <button type="button" onClick={resetSimulator} title="Reset simulator">
                 <RotateCcw size={17} />
