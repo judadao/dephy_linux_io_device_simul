@@ -17,10 +17,12 @@
 - CLI that reads simple IO scripts from stdin or a file.
 - Initial JSON event payloads that are protocol-friendly, without binding the
   repo to MQTT, Modbus, or a product-specific matrix demo.
+- Vite + React local web dashboard for browser-based simulator demos.
 
 ## Near-Term Extension Points
 
 - Add a transport adapter interface for MQTT/Modbus/TCP publishers.
 - Add external script scenario files for matrix and fast-module demos.
 - Add deterministic time and replay controls for benchmark runs.
-
+- Connect the web dashboard to the native simulator through a local API or
+  WebSocket bridge.

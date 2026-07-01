@@ -55,3 +55,24 @@ site/demo/node/linux-sim-001/io/door/event {"event":"rising","channel":"door","t
 This is intentionally transport-neutral so later demos can route the same event
 stream to MQTT, Modbus/TCP, files, or a matrix engine.
 
+## Local Web Simulator
+
+The `web/` directory contains a Vite + React dashboard for local Linux demos.
+
+```sh
+make -f Makefile.linux web-install
+make -f Makefile.linux web
+```
+
+Then open `http://127.0.0.1:8088/`.
+
+Useful web commands:
+
+```sh
+make -f Makefile.linux web-build
+npm --prefix web run dev -- --host 127.0.0.1 --port 8088
+```
+
+The dashboard currently mirrors the simulator script format in the browser and
+renders the same protocol-friendly topic/payload stream. A later backend can
+connect this UI to the native CLI or a small local HTTP/WebSocket server.

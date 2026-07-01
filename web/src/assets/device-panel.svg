@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">Linux IO simulator device panel</title>
+  <desc id="desc">Rack mounted IO simulator with digital and analog terminal blocks.</desc>
+  <rect width="960" height="360" fill="#10151d"/>
+  <rect x="48" y="44" width="864" height="272" rx="18" fill="#19212b" stroke="#334155" stroke-width="2"/>
+  <rect x="86" y="82" width="266" height="196" rx="12" fill="#0f1720" stroke="#263241"/>
+  <rect x="386" y="82" width="488" height="196" rx="12" fill="#111a24" stroke="#263241"/>
+  <text x="112" y="122" fill="#d7dee8" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">DEPHY IO SIM</text>
+  <text x="112" y="154" fill="#93a4b8" font-family="Inter, Arial, sans-serif" font-size="16">Linux local device</text>
+  <circle cx="122" cy="220" r="14" fill="#14b8a6"/>
+  <circle cx="172" cy="220" r="14" fill="#f59e0b"/>
+  <circle cx="222" cy="220" r="14" fill="#ef4444"/>
+  <circle cx="272" cy="220" r="14" fill="#64748b"/>
+  <g fill="#243142" stroke="#64748b">
+    <rect x="424" y="116" width="52" height="124" rx="6"/>
+    <rect x="494" y="116" width="52" height="124" rx="6"/>
+    <rect x="564" y="116" width="52" height="124" rx="6"/>
+    <rect x="634" y="116" width="52" height="124" rx="6"/>
+    <rect x="704" y="116" width="52" height="124" rx="6"/>
+    <rect x="774" y="116" width="52" height="124" rx="6"/>
+  </g>
+  <g fill="#d7dee8" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">
+    <text x="439" y="270">DI</text>
+    <text x="508" y="270">DO</text>
+    <text x="579" y="270">AI</text>
+    <text x="648" y="270">AO</text>
+    <text x="713" y="270">BUS</text>
+    <text x="787" y="270">LOG</text>
+  </g>
+</svg>
+

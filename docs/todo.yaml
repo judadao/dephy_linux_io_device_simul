@@ -8,4 +8,6 @@ items:
   - id: linux_io_sim_matrix_demo
     title: Add IO device + matrix + fast module demo scenario
     status: open
-
+  - id: linux_io_sim_web_backend
+    title: Connect React dashboard to native simulator backend
+    status: open
