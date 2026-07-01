@@ -3,3 +3,5 @@ build_out/
 *.a
 web/node_modules/
 web/dist/
+local_trigger_scenarios/
+web/public/local_trigger_scenarios/

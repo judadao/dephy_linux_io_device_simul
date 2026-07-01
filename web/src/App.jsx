@@ -63,6 +63,8 @@ const ioScriptTest = `slot1 DI 1 1
 slot3 AI 2 42
 slot5 RELAY 3 1`;
 
+const importExportRunTestPath = "/local_trigger_scenarios/import_export_run.json";
+
 const site = "demo";
 const node = "linux-sim-001";
 const maxSlots = 20;
@@ -159,27 +161,59 @@ export default function App() {
   const latestPayload = latest ? JSON.stringify(latest.payload, null, 2) : "{}";
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("test") !== "io-script") {
+    const testMode = new URLSearchParams(window.location.search).get("test");
+
+    if (testMode === "io-script") {
+      replaceSlots(buildInitialSlots());
+      setEvents([]);
+
+      let timeMs = 0;
+      let ok = true;
+      const testLines = cleanScriptLines(ioScriptTest);
+
+      for (const line of testLines) {
+        const result = applyLine(line, timeMs);
+        timeMs = result.timeMs;
+        ok = ok && result.ok;
+      }
+
+      setScript(ioScriptTest);
+      setNowMs(timeMs);
+      setLineIndex(testLines.length);
+      setStatus(ok ? "script test done" : "script test error");
       return;
     }
 
-    replaceSlots(buildInitialSlots());
-    setEvents([]);
+    if (testMode === "import-export-run") {
+      fetch(importExportRunTestPath)
+        .then((response) => response.json())
+        .then((config) => {
+          if (!applySceneConfig(config)) {
+            setStatus("import export run test error");
+            return;
+          }
 
-    let timeMs = 0;
-    let ok = true;
-    const testLines = cleanScriptLines(ioScriptTest);
+          const exported = sceneConfigFromState(config.script || "");
+          const exportOk = exported.modules.length > 0 &&
+            exported.channels.some((channel) => Number(channel.value) > 0) &&
+            typeof exported.script === "string" &&
+            exported.script.includes("slot");
+          let timeMs = 0;
+          let runOk = exportOk;
+          const testLines = cleanScriptLines(exported.script);
 
-    for (const line of testLines) {
-      const result = applyLine(line, timeMs);
-      timeMs = result.timeMs;
-      ok = ok && result.ok;
+          for (const line of testLines) {
+            const result = applyLine(line, timeMs);
+            timeMs = result.timeMs;
+            runOk = runOk && result.ok;
+          }
+
+          setNowMs(timeMs);
+          setLineIndex(testLines.length);
+          setStatus(runOk ? "import export run test done" : "import export run test error");
+        })
+        .catch(() => setStatus("import export run test error"));
     }
-
-    setScript(ioScriptTest);
-    setNowMs(timeMs);
-    setLineIndex(testLines.length);
-    setStatus(ok ? "script test done" : "script test error");
   }, []);
 
   function replaceSlots(nextSlots) {
@@ -187,19 +221,23 @@ export default function App() {
     setSlots(nextSlots);
   }
 
-  function exportSceneConfig() {
-    const config = {
+  function sceneConfigFromState(scriptText = script) {
+    return {
       version: 1,
       name: "linux-io-device-simul-scene",
-      modules,
+      modules: modulesFromSlots(slotsRef.current),
       channels: slotsRef.current.map((slot) => ({
         slot: slot.slotNo,
         type: slot.label,
         channel: slot.point,
         value: slot.value
       })),
-      script
+      script: scriptText
     };
+  }
+
+  function exportSceneConfig() {
+    const config = sceneConfigFromState();
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -213,43 +251,54 @@ export default function App() {
     setStatus("exported");
   }
 
+  function applySceneConfig(config) {
+    const importedModules = Array.isArray(config.modules) ? config.modules : initialModules;
+    const normalizedModules = importedModules
+      .map((module) => ({
+        slotNo: Number(module.slotNo),
+        type: String(module.type).toLowerCase()
+      }))
+      .filter((module) => Number.isInteger(module.slotNo) &&
+        module.slotNo >= 1 &&
+        module.slotNo <= maxSlots &&
+        ioTypes[module.type]);
+    const importedSlots = normalizedModules.flatMap((module) => buildModuleSlots(module.slotNo, module.type));
+    const channelValues = Array.isArray(config.channels) ? config.channels : [];
+    const nextSlots = importedSlots.map((slot) => {
+      const match = channelValues.find((channel) =>
+        Number(channel.slot) === slot.slotNo &&
+        String(channel.type).toLowerCase() === slot.type &&
+        Number(channel.channel) === slot.point
+      );
+      if (!match) {
+        return slot;
+      }
+      const value = Number(match.value);
+      return {
+        ...slot,
+        value: Number.isFinite(value) ? value : 0
+      };
+    });
+
+    if (nextSlots.length === 0) {
+      return false;
+    }
+
+    replaceSlots(nextSlots);
+    setScript(typeof config.script === "string" ? config.script : defaultScript);
+    setNowMs(0);
+    setLineIndex(0);
+    setEvents([]);
+    return true;
+  }
+
   function importSceneConfig(file) {
     const reader = new FileReader();
 
     reader.onload = () => {
       try {
         const config = JSON.parse(String(reader.result));
-        const importedModules = Array.isArray(config.modules) ? config.modules : initialModules;
-        const normalizedModules = importedModules
-          .map((module) => ({
-            slotNo: Number(module.slotNo),
-            type: String(module.type).toLowerCase()
-          }))
-          .filter((module) => Number.isInteger(module.slotNo) && ioTypes[module.type]);
-        const importedSlots = normalizedModules.flatMap((module) => buildModuleSlots(module.slotNo, module.type));
-        const channelValues = Array.isArray(config.channels) ? config.channels : [];
-        const nextSlots = importedSlots.map((slot) => {
-          const match = channelValues.find((channel) =>
-            Number(channel.slot) === slot.slotNo &&
-            String(channel.type).toLowerCase() === slot.type &&
-            Number(channel.channel) === slot.point
-          );
-          if (!match) {
-            return slot;
-          }
-          const value = Number(match.value);
-          return {
-            ...slot,
-            value: Number.isFinite(value) ? value : 0
-          };
-        });
-
-        replaceSlots(nextSlots);
-        setScript(typeof config.script === "string" ? config.script : defaultScript);
-        setNowMs(0);
-        setLineIndex(0);
-        setEvents([]);
-        setStatus("imported");
+        setStatus(applySceneConfig(config) ? "imported" : "import error");
       } catch {
         setStatus("import error");
       }

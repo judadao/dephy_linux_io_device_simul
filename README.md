@@ -70,8 +70,10 @@ Useful web commands:
 
 ```sh
 make -f Makefile.linux web-build
+make -f Makefile.linux prepare-local-trigger-scenarios
 make -f Makefile.linux web-render-check
 make -f Makefile.linux web-io-script-check
+make -f Makefile.linux web-import-export-run-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
@@ -105,3 +107,19 @@ Trigger controls:
 
 The web IO script check opens `http://127.0.0.1:8088/?test=io-script` and
 verifies that a DI, AI, and RELAY command produce event log output.
+
+Local trigger scenarios are generated into ignored folders:
+
+```sh
+make -f Makefile.linux prepare-local-trigger-scenarios
+```
+
+Generated locations:
+
+- `local_trigger_scenarios/`: plain trigger scripts for manual copy/paste.
+- `web/public/local_trigger_scenarios/`: JSON scenes that the local web server
+  can import for smoke tests.
+
+`make -f Makefile.linux web-import-export-run-check` generates the local
+scenario JSON, loads it through the dashboard import path, validates export
+shape, runs the trigger script, and checks the resulting event log.
