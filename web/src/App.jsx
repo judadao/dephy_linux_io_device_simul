@@ -45,6 +45,7 @@ slot5/RELAY/1/0`;
 
 const site = "demo";
 const node = "linux-sim-001";
+const maxSlots = 20;
 
 function buildInitialSlots() {
   return initialModules.flatMap((module) => buildModuleSlots(module.slotNo, module.type));
@@ -227,7 +228,7 @@ export default function App() {
     const currentSlots = slotsRef.current;
     const slot = currentSlots.find((item) => item.slotNo === slotNo && item.type === type && item.point === point);
 
-    if (!Number.isInteger(slotNo) || slotNo < 1 || slotNo > 64 ||
+    if (!Number.isInteger(slotNo) || slotNo < 1 || slotNo > maxSlots ||
         !Number.isInteger(point) || point < 1 || point > 16 ||
         !Number.isFinite(value) || !slot) {
       return false;
@@ -256,7 +257,7 @@ export default function App() {
     const type = typeLabel.toLowerCase();
     const currentSlots = slotsRef.current;
 
-    if (!Number.isInteger(slotNo) || slotNo < 1 || slotNo > 64 || !ioTypes[type]) {
+    if (!Number.isInteger(slotNo) || slotNo < 1 || slotNo > maxSlots || !ioTypes[type]) {
       return false;
     }
     if (currentSlots.some((slot) => slot.slotNo === slotNo)) {
@@ -286,6 +287,10 @@ export default function App() {
     let slotNo = 1;
     while (used.has(slotNo)) {
       slotNo += 1;
+    }
+    if (slotNo > maxSlots) {
+      setStatus("max 20 slots");
+      return;
     }
     addModule(String(slotNo), newSlotType);
   }
@@ -401,7 +406,7 @@ export default function App() {
           <h1>Linux IO Slot Simulator</h1>
           <div className="device-meta">
             <span>slotX / io type / channel / value</span>
-            <span>add/remove module slots</span>
+            <span>add/remove module slots, max 20</span>
             <span>t={nowMs}ms</span>
           </div>
         </div>

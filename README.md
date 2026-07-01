@@ -74,9 +74,9 @@ make -f Makefile.linux web-render-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
-The dashboard models swappable IO modules. Each module slot has 16 channels.
-Digital and relay channels light when value is `1`; analog channels light when
-value is greater than `0`.
+The dashboard models up to 20 swappable IO module slots. Each module slot has
+16 channels. Digital and relay channels light when value is `1`; analog
+channels light when value is greater than `0`.
 
 Web script commands:
 
