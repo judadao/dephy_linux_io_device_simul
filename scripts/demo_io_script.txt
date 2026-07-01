@@ -1,0 +1,12 @@
+# Commands:
+# sleep <ms>
+# set <input-channel> <value>
+# write <output-channel> <value>
+sleep 10
+set door 1
+sleep 5
+set pressure 1234
+write relay 1
+sleep 10
+set door 0
+

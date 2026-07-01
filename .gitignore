@@ -1,0 +1,4 @@
+build_out/
+*.o
+*.a
+

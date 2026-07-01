@@ -1,0 +1,5 @@
+name: linux_io_device_simul
+build:
+  cmake: zephyr
+  kconfig: zephyr/Kconfig
+

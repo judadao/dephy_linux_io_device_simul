@@ -1,0 +1,10 @@
+menu "Linux IO Device Simulator"
+
+config LINUX_IO_DEVICE_SIMUL
+	bool "Enable Linux IO device simulator"
+	default n
+	help
+	  Enable the Linux-side script-driven IO device simulator module.
+
+endmenu
+

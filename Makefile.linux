@@ -1,0 +1,44 @@
+CC      ?= gcc
+AR      ?= ar
+CFLAGS  ?= -Wall -Wextra -std=c11 -g
+OUTDIR  ?= build_out
+
+LIB := $(OUTDIR)/liblinux_io_device_simul.a
+OBJS := $(OUTDIR)/src/io_device_simul.o
+
+.PHONY: all structure-audit direct-test test zephyr-metadata demo clean
+
+all: $(LIB) $(OUTDIR)/linux_io_device_simul
+
+$(OUTDIR):
+	mkdir -p $(OUTDIR)/src
+
+$(OUTDIR)/src/io_device_simul.o: src/io_device_simul.c include/linux_io_device_simul/io_device_simul.h | $(OUTDIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(LIB): $(OBJS)
+	$(AR) rcs $@ $^
+
+$(OUTDIR)/unit_io_device_simul: tests/unit_io_device_simul.c src/io_device_simul.c include/linux_io_device_simul/io_device_simul.h | $(OUTDIR)
+	$(CC) $(CFLAGS) -Iinclude tests/unit_io_device_simul.c src/io_device_simul.c -o $@
+
+$(OUTDIR)/linux_io_device_simul: tools/linux_io_device_simul.c src/io_device_simul.c include/linux_io_device_simul/io_device_simul.h | $(OUTDIR)
+	$(CC) $(CFLAGS) -Iinclude tools/linux_io_device_simul.c src/io_device_simul.c -o $@
+
+structure-audit:
+	./scripts/audit_module_structure.sh .
+
+zephyr-metadata:
+	./scripts/test_zephyr_module.sh --metadata-only
+
+direct-test: $(OUTDIR)/unit_io_device_simul $(OUTDIR)/linux_io_device_simul structure-audit zephyr-metadata
+	$(OUTDIR)/unit_io_device_simul
+	OUTDIR=$(OUTDIR) sh scripts/test_linux_io_device_simul.sh
+
+test: direct-test
+
+demo: $(OUTDIR)/linux_io_device_simul
+	$(OUTDIR)/linux_io_device_simul scripts/demo_io_script.txt
+
+clean:
+	rm -rf $(OUTDIR)

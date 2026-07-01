@@ -1,0 +1,19 @@
+{
+  "repo_type": "module",
+  "name": "linux_io_device_simul",
+  "description": "Linux IO device simulator for script-driven digital/analog IO events and industrial protocol friendly payload output.",
+  "module_kind": "linux_tooling",
+  "product_dependency_allowed": true,
+  "license": "MIT",
+  "repo": "git@github.com:judadao/dephy_linux_io_device_simul.git",
+  "attribution_notice": "Copyright notice and attribution to Judd (judadao) must be preserved.",
+  "topics": [
+    "dephy",
+    "linux",
+    "io-simulator",
+    "industrial-protocol",
+    "script-driven",
+    "c11"
+  ]
+}
+
