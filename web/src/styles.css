@@ -55,12 +55,16 @@ button:hover {
 }
 
 .device-band {
-  min-height: 260px;
+  min-height: 220px;
   display: grid;
   grid-template-columns: minmax(300px, 0.78fr) minmax(360px, 1.22fr);
   gap: 24px;
   align-items: center;
   padding: 10px 0 24px;
+}
+
+.device-band.compact {
+  min-height: 190px;
 }
 
 .device-copy h1 {
@@ -109,6 +113,150 @@ button:hover {
   grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 0.95fr) minmax(360px, 1.15fr);
   gap: 16px;
   align-items: stretch;
+}
+
+.slot-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.slot-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.slot-card-head {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.slot-card-head h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.slot-card-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.slot-card-head strong {
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.point-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.point {
+  min-width: 0;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 16px minmax(20px, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 7px;
+  border: 1px solid #263241;
+  border-radius: 7px;
+  padding: 8px;
+  background: #0d141c;
+  color: var(--muted);
+}
+
+.point:hover {
+  border-color: #52657c;
+}
+
+.lamp {
+  width: 14px;
+  height: 14px;
+  grid-row: 1 / 3;
+  border-radius: 999px;
+  background: #334155;
+  box-shadow: inset 0 0 0 2px #0b1118;
+}
+
+.point-on .lamp {
+  background: var(--green);
+  box-shadow: 0 0 14px rgba(132, 204, 22, 0.95);
+}
+
+.point-id {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.point-value {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-workspace {
+  grid-template-columns: minmax(420px, 0.95fr) minmax(360px, 1.05fr);
+}
+
+.module-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.module-bar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 36px 0 12px;
+  background: #202a36;
+  color: var(--text);
+}
+
+.slot-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slot-actions button {
+  width: 32px;
+  min-height: 32px;
+  justify-content: center;
+  padding: 0;
+}
+
+.hidden-file {
+  display: none;
 }
 
 .protocol-band {
@@ -249,6 +397,10 @@ textarea {
   font-size: 13px;
 }
 
+.slot-event {
+  grid-template-columns: 78px minmax(0, 1fr) 72px;
+}
+
 .event-item strong {
   color: var(--text);
 }
@@ -279,15 +431,42 @@ textarea {
   line-height: 1.5;
 }
 
+.usage-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.usage-strip code {
+  padding: 6px 9px;
+  border: 1px solid #263241;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #c8d5e4;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
 @media (max-width: 980px) {
   .shell {
     padding: 16px;
   }
 
   .device-band,
+  .slot-board,
   .workspace,
   .protocol-band {
     grid-template-columns: 1fr;
+  }
+
+  .slot-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .device-copy h1 {
@@ -317,5 +496,9 @@ textarea {
 
   .io-row {
     grid-template-columns: 44px minmax(0, 1fr) 72px;
+  }
+
+  .slot-board {
+    grid-template-columns: 1fr;
   }
 }

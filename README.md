@@ -74,6 +74,23 @@ make -f Makefile.linux web-render-check
 npm --prefix web run dev -- --host 127.0.0.1 --port 8088
 ```
 
-The dashboard currently mirrors the simulator script format in the browser and
-renders the same protocol-friendly topic/payload stream. A later backend can
-connect this UI to the native CLI or a small local HTTP/WebSocket server.
+The dashboard models swappable IO modules. Each module slot has 16 channels.
+Digital and relay channels light when value is `1`; analog channels light when
+value is greater than `0`.
+
+Web script commands:
+
+```txt
+add slot6 DI
+slot1 DI 1 1
+slot3 AI 1 128
+slot5/RELAY/1/0
+remove slot6
+```
+
+Command fields are `slotX`, `io type`, `channel number`, and `value`. Slash and
+space separated forms are both supported.
+
+Use `Export` to download a JSON scene containing module slots, channel values,
+and the script. Use `Import` to load the same JSON later for fast test scenario
+switching.
