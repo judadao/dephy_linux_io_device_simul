@@ -44,6 +44,32 @@ Supported commands:
 - `write <output-channel> <value>` changes a DO/AO output.
 - `poll` is reserved for future transport and timed behavior.
 
+For motion prediction integration, the CLI also supports slot trigger scripts:
+
+```txt
+slot1 DI 1 1
+slot3 AI 1 80
+slot3 AI 2 65
+slot5 RELAY 1 0
+sleep 300
+slot1 DI 2 1
+```
+
+Run the slot stream mode with a loop and a simulated IO sample period:
+
+```sh
+build_out/linux_io_device_simul --slot-stream --loop 2 --sample-ms 300 scripts/motion_pipeline.trigger
+```
+
+This emits one JSON event per slot command:
+
+```txt
+site/demo/node/linux-sim-001/slot/3/io/ai/1/event {"event":"changed","slot":3,"type":"ai","channel":1,"value":80,"t_ms":900,"loop":1}
+```
+
+`dephy_ml_high_speed_implement` can consume that stream directly and predict
+the missing high-rate joint frames between these slow IO anchors.
+
 ## Current CLI Output
 
 The CLI prints one line per event:
