@@ -32,11 +32,25 @@ const initialModules = [
   { slotNo: 2, type: "do" },
   { slotNo: 3, type: "ai" },
   { slotNo: 4, type: "ao" },
-  { slotNo: 5, type: "relay" }
+  { slotNo: 5, type: "relay" },
+  { slotNo: 6, type: "di" },
+  { slotNo: 7, type: "do" },
+  { slotNo: 8, type: "ai" },
+  { slotNo: 9, type: "ao" },
+  { slotNo: 10, type: "relay" },
+  { slotNo: 11, type: "di" },
+  { slotNo: 12, type: "do" },
+  { slotNo: 13, type: "ai" },
+  { slotNo: 14, type: "ao" },
+  { slotNo: 15, type: "relay" },
+  { slotNo: 16, type: "di" },
+  { slotNo: 17, type: "do" },
+  { slotNo: 18, type: "ai" },
+  { slotNo: 19, type: "ao" },
+  { slotNo: 20, type: "relay" }
 ];
 
-const defaultScript = `add slot6 DI
-slot6 DI 1 1
+const defaultScript = `slot6 DI 1 1
 slot1 DI 2 1
 slot3 AI 1 128
 slot2 DO 3 1
@@ -500,7 +514,7 @@ export default function App() {
             <div className={`slot-card type-${type.id}`} key={module.slotNo}>
               <div className="slot-card-head">
                 <div>
-                  <h2>Slot {module.slotNo}</h2>
+                  <h2>S{module.slotNo} {type.label}</h2>
                   <span>{type.label} - {type.title}</span>
                 </div>
                 <div className="slot-actions">
