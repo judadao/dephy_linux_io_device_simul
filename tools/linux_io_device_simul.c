@@ -492,6 +492,7 @@ static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
 {
     char line[1024];
     size_t count = 0;
+    uint32_t first_t_ms = 0;
     float x = 0.0f;
     float y = 0.0f;
     float z = 0.0f;
@@ -500,6 +501,7 @@ static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
     float roll = 0.0f;
     float grip = 0.0f;
     uint32_t safety_hold = 0;
+    uint32_t seen_mask = 0;
 
     if (!input) {
         return 1;
@@ -528,27 +530,59 @@ static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
         if (strcmp(type, "ai") == 0 || strcmp(type, "ao") == 0) {
             float normalized = (float)value / 1000.0f;
 
+            if (channel == 1 && seen_mask == 0x7fU) {
+                ++count;
+                printf("site/demo/node/linux-sim-001/hand/keyframe/event "
+                       "{\"event\":\"keyframe\",\"frame_id\":\"%s_%04zu\",\"t_ms\":%u,"
+                       "\"x\":%.5f,\"y\":%.5f,\"z\":%.5f,"
+                       "\"yaw\":%.5f,\"pitch\":%.5f,\"roll\":%.5f,"
+                       "\"grip\":%.5f,\"hold_ms\":0,\"tolerance\":0.01500,"
+                       "\"safety_hold\":%u,\"source\":\"io\"}\n",
+                       frame_prefix,
+                       count,
+                       first_t_ms,
+                       x,
+                       y,
+                       z,
+                       yaw,
+                       pitch,
+                       roll,
+                       grip,
+                       safety_hold);
+                seen_mask = 0;
+            }
+            if (seen_mask == 0) {
+                first_t_ms = t_ms;
+            }
+
             switch (channel) {
             case 1:
                 x = clamp_f32(normalized, -1.0f, 1.0f);
+                seen_mask |= 1U << 0;
                 break;
             case 2:
                 y = clamp_f32(normalized, -1.0f, 1.0f);
+                seen_mask |= 1U << 1;
                 break;
             case 3:
                 z = clamp_f32(normalized, -1.0f, 1.0f);
+                seen_mask |= 1U << 2;
                 break;
             case 4:
                 yaw = clamp_f32(normalized, -3.14159f, 3.14159f);
+                seen_mask |= 1U << 3;
                 break;
             case 5:
                 pitch = clamp_f32(normalized, -3.14159f, 3.14159f);
+                seen_mask |= 1U << 4;
                 break;
             case 6:
                 roll = clamp_f32(normalized, -3.14159f, 3.14159f);
+                seen_mask |= 1U << 5;
                 break;
             case 7:
                 grip = clamp_f32(normalized, 0.0f, 1.0f);
+                seen_mask |= 1U << 6;
                 break;
             default:
                 continue;
@@ -559,7 +593,9 @@ static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
         } else {
             continue;
         }
+    }
 
+    if (seen_mask == 0x7fU) {
         ++count;
         printf("site/demo/node/linux-sim-001/hand/keyframe/event "
                "{\"event\":\"keyframe\",\"frame_id\":\"%s_%04zu\",\"t_ms\":%u,"
@@ -569,7 +605,7 @@ static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
                "\"safety_hold\":%u,\"source\":\"io\"}\n",
                frame_prefix,
                count,
-               t_ms,
+               first_t_ms,
                x,
                y,
                z,

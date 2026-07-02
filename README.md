@@ -173,9 +173,10 @@ AI/AO channel 7: grip  = clamp(value / 1000.0, 0.0, 1.0)
 DI/DO/RELAY channel 1: safety_hold = value != 0
 ```
 
-The adapter emits a new observed keyframe after each relevant IO update. That
-means noisy real IO can be recorded as-is, then the implement repo can train on
-the observed sequence or run prediction against it.
+The adapter emits one observed keyframe only after a complete AI/AO channel
+batch for channels 1-7 is available. This avoids recording half-updated poses
+such as "x changed but grip did not arrive yet", which would otherwise make the
+prediction output visibly jitter.
 
 ## Current CLI Output
 

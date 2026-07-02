@@ -43,4 +43,5 @@ grep -q '"frame_id":"io_obs_0001"' "$observed_hand"
 grep -q '"grip":1.00000' "$observed_hand"
 grep -q '"safety_hold":1' "$observed_hand"
 grep -q 'io_obs_0001,0,0.00000' "$observed_csv"
-grep -q 'io_obs_0024,1520,0.22400,0.07700,0.04100,0.28300,-0.11800,0.14200,1.00000' "$observed_csv"
+grep -q 'io_obs_0003,1240,0.22400,0.07700,0.04100,0.28300,-0.11800,0.14200,1.00000' "$observed_csv"
+wc -l "$observed_csv" | awk '{ if ($1 != 6) exit 1; }'
