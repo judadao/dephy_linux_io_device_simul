@@ -70,6 +70,22 @@ site/demo/node/linux-sim-001/slot/3/io/ai/1/event {"event":"changed","slot":3,"t
 `dephy_ml_high_speed_implement` can consume that stream directly and predict
 the missing high-rate joint frames between these slow IO anchors.
 
+For the single-palm demo, the simulator can stream hand keyframes:
+
+```txt
+hand open_start 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0 0.012 0
+hand half_close 0.10 0.04 0.02 0.18 -0.06 0.08 0.45 0 0.012 0
+```
+
+Run:
+
+```sh
+build_out/linux_io_device_simul --hand-stream --loop 2 --sample-ms 300 scripts/hand_keyframe_demo.script
+```
+
+The stream emits one JSON keyframe anchor every simulated 300ms. The implement
+repo loads these anchors and applies its loaded prediction policy between them.
+
 ## Current CLI Output
 
 The CLI prints one line per event:

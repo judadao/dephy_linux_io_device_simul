@@ -118,6 +118,54 @@ static int normalize_slot_line(const char *line,
     return 0;
 }
 
+static int normalize_hand_line(const char *line,
+                               char *frame_id,
+                               size_t frame_id_size,
+                               float *x,
+                               float *y,
+                               float *z,
+                               float *yaw,
+                               float *pitch,
+                               float *roll,
+                               float *grip,
+                               unsigned *hold_ms,
+                               float *tolerance,
+                               unsigned *safety_hold)
+{
+    char op[16];
+    char id[64];
+
+    if (!line || !frame_id || !x || !y || !z || !yaw || !pitch || !roll ||
+        !grip || !hold_ms || !tolerance || !safety_hold) {
+        return -1;
+    }
+    if (line[0] == '\0' || line[0] == '\n' || line[0] == '#') {
+        return 1;
+    }
+
+    if (sscanf(line,
+               "%15s %63s %f %f %f %f %f %f %f %u %f %u",
+               op,
+               id,
+               x,
+               y,
+               z,
+               yaw,
+               pitch,
+               roll,
+               grip,
+               hold_ms,
+               tolerance,
+               safety_hold) != 12) {
+        return -1;
+    }
+    if (strcmp(op, "hand") != 0) {
+        return -1;
+    }
+    snprintf(frame_id, frame_id_size, "%s", id);
+    return 0;
+}
+
 static int run_slot_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
 {
     char lines[512][160];
@@ -173,6 +221,80 @@ static int run_slot_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
     return 0;
 }
 
+static int run_hand_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
+{
+    char lines[512][160];
+    size_t line_count = 0;
+    uint32_t loop;
+    uint32_t now_ms = 0;
+
+    if (read_script(input, lines, sizeof(lines) / sizeof(lines[0]), &line_count) != 0) {
+        return 1;
+    }
+
+    for (loop = 0; loop < loops; ++loop) {
+        size_t i;
+
+        for (i = 0; i < line_count; ++i) {
+            char frame_id[64];
+            float x;
+            float y;
+            float z;
+            float yaw;
+            float pitch;
+            float roll;
+            float grip;
+            float tolerance;
+            unsigned hold_ms;
+            unsigned safety_hold;
+            int parsed = normalize_hand_line(lines[i],
+                                             frame_id,
+                                             sizeof(frame_id),
+                                             &x,
+                                             &y,
+                                             &z,
+                                             &yaw,
+                                             &pitch,
+                                             &roll,
+                                             &grip,
+                                             &hold_ms,
+                                             &tolerance,
+                                             &safety_hold);
+
+            if (parsed == 1) {
+                continue;
+            }
+            if (parsed != 0) {
+                fprintf(stderr, "invalid hand keyframe command: %s", lines[i]);
+                return 1;
+            }
+
+            printf("site/demo/node/linux-sim-001/hand/keyframe/event "
+                   "{\"event\":\"keyframe\",\"frame_id\":\"%s\",\"t_ms\":%u,"
+                   "\"x\":%.5f,\"y\":%.5f,\"z\":%.5f,"
+                   "\"yaw\":%.5f,\"pitch\":%.5f,\"roll\":%.5f,"
+                   "\"grip\":%.5f,\"hold_ms\":%u,\"tolerance\":%.5f,"
+                   "\"safety_hold\":%u,\"loop\":%u}\n",
+                   frame_id,
+                   now_ms,
+                   x,
+                   y,
+                   z,
+                   yaw,
+                   pitch,
+                   roll,
+                   grip,
+                   hold_ms,
+                   tolerance,
+                   safety_hold ? 1U : 0U,
+                   loop + 1);
+            now_ms += sample_ms;
+        }
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     static const linux_io_sim_channel_t channels[] = {
@@ -192,6 +314,7 @@ int main(int argc, char **argv)
     uint32_t slot_loops = 1;
     uint32_t sample_ms = 300;
     int slot_stream = 0;
+    int hand_stream = 0;
     int i;
 
     options.user = &options;
@@ -199,6 +322,8 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--slot-stream") == 0) {
             slot_stream = 1;
+        } else if (strcmp(argv[i], "--hand-stream") == 0) {
+            hand_stream = 1;
         } else if (strcmp(argv[i], "--loop") == 0 && i + 1 < argc) {
             if (parse_u32(argv[++i], &slot_loops) != 0 || slot_loops == 0) {
                 return 2;
@@ -218,6 +343,14 @@ int main(int argc, char **argv)
 
     if (slot_stream) {
         int result = run_slot_stream(input, slot_loops, sample_ms);
+        if (input != stdin) {
+            fclose(input);
+        }
+        return result;
+    }
+
+    if (hand_stream) {
+        int result = run_hand_stream(input, slot_loops, sample_ms);
         if (input != stdin) {
             fclose(input);
         }

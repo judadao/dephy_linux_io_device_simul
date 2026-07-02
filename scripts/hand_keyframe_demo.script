@@ -1,0 +1,8 @@
+# Hand keyframe device simulator script.
+# Format:
+# hand <frame_id> <x> <y> <z> <yaw> <pitch> <roll> <grip> <hold_ms> <tolerance> <safety_hold>
+hand open_start 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0 0.012 0
+hand half_close 0.10 0.04 0.02 0.18 -0.06 0.08 0.45 0 0.012 0
+hand closed_reach 0.22 0.08 0.04 0.28 -0.12 0.14 1.00 0 0.012 0
+hand half_open 0.10 0.02 0.00 0.10 -0.04 0.06 0.35 0 0.012 0
+hand open_return 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0 0.012 0
