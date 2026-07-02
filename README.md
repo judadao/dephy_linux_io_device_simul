@@ -86,6 +86,55 @@ build_out/linux_io_device_simul --hand-stream --loop 2 --sample-ms 300 scripts/h
 The stream emits one JSON keyframe anchor every simulated 300ms. The implement
 repo loads these anchors and applies its loaded prediction policy between them.
 
+## Recording Hand Keyframes
+
+The simulator can also record hand keyframe events back into CSV. This is the
+intended workflow before training:
+
+```txt
+real IO or device simulator
+  -> hand keyframe event stream
+  -> recorded keyframe CSV
+  -> dephy_ml_high_speed_implement training / prediction
+```
+
+For the current simulator-only demo:
+
+```sh
+build_out/linux_io_device_simul \
+  --hand-stream \
+  --loop 1 \
+  --sample-ms 300 \
+  scripts/hand_keyframe_demo.script \
+  > build_out/hand_device_stream.out
+
+build_out/linux_io_device_simul \
+  --record-hand-keyframes \
+  build_out/hand_device_stream.out \
+  > build_out/recorded_hand_keyframes.csv
+```
+
+The recorded CSV matches the implement repo's hand keyframe format:
+
+```txt
+frame_id,t_ms,x,y,z,yaw,pitch,roll,grip,hold_ms,tolerance,safety_hold
+open_start,0,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0,0.01200,0
+```
+
+That file can then be used by `dephy_ml_high_speed_implement`:
+
+```sh
+../dephy_ml_high_speed_implement/build_out/dephy_hand_predict \
+  --keyframes build_out/recorded_hand_keyframes.csv \
+  --policy ../dephy_ml_high_speed_implement/examples/hand/hand_policy.json \
+  --render-ms 16
+```
+
+In the later real-device flow, actual IO values will usually jitter. The
+recorded keyframes remain the low-rate anchors, and the implement side uses its
+trained policy plus the current observed state to keep correcting direction and
+fill the missing frames until each keyframe is reached smoothly.
+
 ## Current CLI Output
 
 The CLI prints one line per event:

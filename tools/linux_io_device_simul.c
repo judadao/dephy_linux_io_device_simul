@@ -166,6 +166,139 @@ static int normalize_hand_line(const char *line,
     return 0;
 }
 
+static const char *json_value_pos(const char *json, const char *key)
+{
+    char pattern[64];
+    const char *pos;
+
+    if (!json || !key) {
+        return 0;
+    }
+    if (snprintf(pattern, sizeof(pattern), "\"%s\"", key) >= (int)sizeof(pattern)) {
+        return 0;
+    }
+    pos = strstr(json, pattern);
+    if (!pos) {
+        return 0;
+    }
+    pos += strlen(pattern);
+    while (*pos == ' ' || *pos == '\t') {
+        ++pos;
+    }
+    if (*pos != ':') {
+        return 0;
+    }
+    ++pos;
+    while (*pos == ' ' || *pos == '\t') {
+        ++pos;
+    }
+    return pos;
+}
+
+static int json_find_string(const char *json, const char *key, char *out, size_t out_size)
+{
+    const char *pos;
+    const char *end;
+    size_t len;
+
+    if (!out || out_size == 0) {
+        return -1;
+    }
+    pos = json_value_pos(json, key);
+    if (!pos || *pos != '"') {
+        return -1;
+    }
+    ++pos;
+    end = strchr(pos, '"');
+    if (!end) {
+        return -1;
+    }
+    len = (size_t)(end - pos);
+    if (len >= out_size) {
+        len = out_size - 1;
+    }
+    memcpy(out, pos, len);
+    out[len] = '\0';
+    return 0;
+}
+
+static int json_find_float(const char *json, const char *key, float *out)
+{
+    const char *pos;
+    char *end = 0;
+    float value;
+
+    if (!out) {
+        return -1;
+    }
+    pos = json_value_pos(json, key);
+    if (!pos) {
+        return -1;
+    }
+    value = strtof(pos, &end);
+    if (end == pos) {
+        return -1;
+    }
+    *out = value;
+    return 0;
+}
+
+static int json_find_u32(const char *json, const char *key, uint32_t *out)
+{
+    const char *pos;
+    char *end = 0;
+    unsigned long value;
+
+    if (!out) {
+        return -1;
+    }
+    pos = json_value_pos(json, key);
+    if (!pos) {
+        return -1;
+    }
+    value = strtoul(pos, &end, 10);
+    if (end == pos || value > 1000000UL) {
+        return -1;
+    }
+    *out = (uint32_t)value;
+    return 0;
+}
+
+static int parse_hand_event_json(const char *line,
+                                 char *frame_id,
+                                 size_t frame_id_size,
+                                 uint32_t *t_ms,
+                                 float *x,
+                                 float *y,
+                                 float *z,
+                                 float *yaw,
+                                 float *pitch,
+                                 float *roll,
+                                 float *grip,
+                                 uint32_t *hold_ms,
+                                 float *tolerance,
+                                 uint32_t *safety_hold)
+{
+    if (!line || !strstr(line, "hand/keyframe/event") || !strstr(line, "\"event\":\"keyframe\"")) {
+        return 1;
+    }
+    if (json_find_string(line, "frame_id", frame_id, frame_id_size) != 0 ||
+        json_find_u32(line, "t_ms", t_ms) != 0 ||
+        json_find_float(line, "x", x) != 0 ||
+        json_find_float(line, "y", y) != 0 ||
+        json_find_float(line, "z", z) != 0 ||
+        json_find_float(line, "yaw", yaw) != 0 ||
+        json_find_float(line, "pitch", pitch) != 0 ||
+        json_find_float(line, "roll", roll) != 0 ||
+        json_find_float(line, "grip", grip) != 0 ||
+        json_find_u32(line, "hold_ms", hold_ms) != 0 ||
+        json_find_float(line, "tolerance", tolerance) != 0 ||
+        json_find_u32(line, "safety_hold", safety_hold) != 0) {
+        return -1;
+    }
+    return 0;
+}
+
 static int run_slot_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
 {
     char lines[512][160];
@@ -295,6 +428,71 @@ static int run_hand_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
     return 0;
 }
 
+static int record_hand_keyframes(FILE *input)
+{
+    char line[1024];
+    size_t count = 0;
+
+    if (!input) {
+        return 1;
+    }
+
+    printf("frame_id,t_ms,x,y,z,yaw,pitch,roll,grip,hold_ms,tolerance,safety_hold\n");
+    while (fgets(line, sizeof(line), input)) {
+        char frame_id[64];
+        uint32_t t_ms = 0;
+        uint32_t hold_ms = 0;
+        uint32_t safety_hold = 0;
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+        float yaw = 0.0f;
+        float pitch = 0.0f;
+        float roll = 0.0f;
+        float grip = 0.0f;
+        float tolerance = 0.0f;
+        int parsed = parse_hand_event_json(line,
+                                           frame_id,
+                                           sizeof(frame_id),
+                                           &t_ms,
+                                           &x,
+                                           &y,
+                                           &z,
+                                           &yaw,
+                                           &pitch,
+                                           &roll,
+                                           &grip,
+                                           &hold_ms,
+                                           &tolerance,
+                                           &safety_hold);
+
+        if (parsed == 1) {
+            continue;
+        }
+        if (parsed != 0) {
+            fprintf(stderr, "invalid hand keyframe event: %s", line);
+            return 1;
+        }
+
+        printf("%s,%u,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%u,%.5f,%u\n",
+               frame_id,
+               t_ms,
+               x,
+               y,
+               z,
+               yaw,
+               pitch,
+               roll,
+               grip,
+               hold_ms,
+               tolerance,
+               safety_hold ? 1U : 0U);
+        ++count;
+    }
+
+    return count > 0 ? 0 : 1;
+}
+
 int main(int argc, char **argv)
 {
     static const linux_io_sim_channel_t channels[] = {
@@ -315,6 +513,7 @@ int main(int argc, char **argv)
     uint32_t sample_ms = 300;
     int slot_stream = 0;
     int hand_stream = 0;
+    int hand_record = 0;
     int i;
 
     options.user = &options;
@@ -324,6 +523,8 @@ int main(int argc, char **argv)
             slot_stream = 1;
         } else if (strcmp(argv[i], "--hand-stream") == 0) {
             hand_stream = 1;
+        } else if (strcmp(argv[i], "--record-hand-keyframes") == 0) {
+            hand_record = 1;
         } else if (strcmp(argv[i], "--loop") == 0 && i + 1 < argc) {
             if (parse_u32(argv[++i], &slot_loops) != 0 || slot_loops == 0) {
                 return 2;
@@ -351,6 +552,14 @@ int main(int argc, char **argv)
 
     if (hand_stream) {
         int result = run_hand_stream(input, slot_loops, sample_ms);
+        if (input != stdin) {
+            fclose(input);
+        }
+        return result;
+    }
+
+    if (hand_record) {
+        int result = record_hand_keyframes(input);
         if (input != stdin) {
             fclose(input);
         }
