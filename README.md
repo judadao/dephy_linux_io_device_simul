@@ -135,6 +135,48 @@ recorded keyframes remain the low-rate anchors, and the implement side uses its
 trained policy plus the current observed state to keep correcting direction and
 fill the missing frames until each keyframe is reached smoothly.
 
+## Mapping IO To Hand Keyframes
+
+When the source is real IO instead of a hand keyframe script, use the IO-to-hand
+adapter. It reads slot event JSON and emits hand keyframe events:
+
+```sh
+build_out/linux_io_device_simul \
+  --slot-stream \
+  --loop 1 \
+  --sample-ms 40 \
+  scripts/hand_io_observed.trigger \
+  > build_out/hand_io_observed.out
+
+build_out/linux_io_device_simul \
+  --io-hand-adapter \
+  --frame-prefix io_obs \
+  build_out/hand_io_observed.out \
+  > build_out/hand_io_observed_keyframes.out
+
+build_out/linux_io_device_simul \
+  --record-hand-keyframes \
+  build_out/hand_io_observed_keyframes.out \
+  > build_out/hand_io_observed_keyframes.csv
+```
+
+Default mapping:
+
+```txt
+AI/AO channel 1: x     = value / 1000.0
+AI/AO channel 2: y     = value / 1000.0
+AI/AO channel 3: z     = value / 1000.0
+AI/AO channel 4: yaw   = value / 1000.0
+AI/AO channel 5: pitch = value / 1000.0
+AI/AO channel 6: roll  = value / 1000.0
+AI/AO channel 7: grip  = clamp(value / 1000.0, 0.0, 1.0)
+DI/DO/RELAY channel 1: safety_hold = value != 0
+```
+
+The adapter emits a new observed keyframe after each relevant IO update. That
+means noisy real IO can be recorded as-is, then the implement repo can train on
+the observed sequence or run prediction against it.
+
 ## Current CLI Output
 
 The CLI prints one line per event:

@@ -264,6 +264,38 @@ static int json_find_u32(const char *json, const char *key, uint32_t *out)
     return 0;
 }
 
+static int json_find_i32(const char *json, const char *key, int *out)
+{
+    const char *pos;
+    char *end = 0;
+    long value;
+
+    if (!out) {
+        return -1;
+    }
+    pos = json_value_pos(json, key);
+    if (!pos) {
+        return -1;
+    }
+    value = strtol(pos, &end, 10);
+    if (end == pos || value < -1000000L || value > 1000000L) {
+        return -1;
+    }
+    *out = (int)value;
+    return 0;
+}
+
+static float clamp_f32(float value, float low, float high)
+{
+    if (value < low) {
+        return low;
+    }
+    if (value > high) {
+        return high;
+    }
+    return value;
+}
+
 static int parse_hand_event_json(const char *line,
                                  char *frame_id,
                                  size_t frame_id_size,
@@ -296,6 +328,34 @@ static int parse_hand_event_json(const char *line,
         json_find_u32(line, "safety_hold", safety_hold) != 0) {
         return -1;
     }
+    return 0;
+}
+
+static int parse_slot_event_json(const char *line,
+                                 uint8_t *slot,
+                                 char *type,
+                                 size_t type_size,
+                                 uint16_t *channel,
+                                 int *value,
+                                 uint32_t *t_ms)
+{
+    uint32_t parsed_slot;
+    uint32_t parsed_channel;
+
+    if (!line || !strstr(line, "/slot/") || !strstr(line, "\"event\":\"changed\"")) {
+        return 1;
+    }
+    if (json_find_u32(line, "slot", &parsed_slot) != 0 ||
+        json_find_string(line, "type", type, type_size) != 0 ||
+        json_find_u32(line, "channel", &parsed_channel) != 0 ||
+        json_find_i32(line, "value", value) != 0 ||
+        json_find_u32(line, "t_ms", t_ms) != 0 ||
+        parsed_slot == 0 || parsed_slot > 20 || parsed_channel > 65535) {
+        return -1;
+    }
+
+    *slot = (uint8_t)parsed_slot;
+    *channel = (uint16_t)parsed_channel;
     return 0;
 }
 
@@ -428,6 +488,101 @@ static int run_hand_stream(FILE *input, uint32_t loops, uint32_t sample_ms)
     return 0;
 }
 
+static int adapt_io_to_hand(FILE *input, const char *frame_prefix)
+{
+    char line[1024];
+    size_t count = 0;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float roll = 0.0f;
+    float grip = 0.0f;
+    uint32_t safety_hold = 0;
+
+    if (!input) {
+        return 1;
+    }
+    if (!frame_prefix) {
+        frame_prefix = "observed";
+    }
+
+    while (fgets(line, sizeof(line), input)) {
+        uint8_t slot = 0;
+        char type[16];
+        uint16_t channel = 0;
+        int value = 0;
+        uint32_t t_ms = 0;
+        int parsed = parse_slot_event_json(line, &slot, type, sizeof(type), &channel, &value, &t_ms);
+
+        (void)slot;
+        if (parsed == 1) {
+            continue;
+        }
+        if (parsed != 0) {
+            fprintf(stderr, "invalid slot event: %s", line);
+            return 1;
+        }
+
+        if (strcmp(type, "ai") == 0 || strcmp(type, "ao") == 0) {
+            float normalized = (float)value / 1000.0f;
+
+            switch (channel) {
+            case 1:
+                x = clamp_f32(normalized, -1.0f, 1.0f);
+                break;
+            case 2:
+                y = clamp_f32(normalized, -1.0f, 1.0f);
+                break;
+            case 3:
+                z = clamp_f32(normalized, -1.0f, 1.0f);
+                break;
+            case 4:
+                yaw = clamp_f32(normalized, -3.14159f, 3.14159f);
+                break;
+            case 5:
+                pitch = clamp_f32(normalized, -3.14159f, 3.14159f);
+                break;
+            case 6:
+                roll = clamp_f32(normalized, -3.14159f, 3.14159f);
+                break;
+            case 7:
+                grip = clamp_f32(normalized, 0.0f, 1.0f);
+                break;
+            default:
+                continue;
+            }
+        } else if ((strcmp(type, "di") == 0 || strcmp(type, "do") == 0 ||
+                    strcmp(type, "relay") == 0) && channel == 1) {
+            safety_hold = value ? 1U : 0U;
+        } else {
+            continue;
+        }
+
+        ++count;
+        printf("site/demo/node/linux-sim-001/hand/keyframe/event "
+               "{\"event\":\"keyframe\",\"frame_id\":\"%s_%04zu\",\"t_ms\":%u,"
+               "\"x\":%.5f,\"y\":%.5f,\"z\":%.5f,"
+               "\"yaw\":%.5f,\"pitch\":%.5f,\"roll\":%.5f,"
+               "\"grip\":%.5f,\"hold_ms\":0,\"tolerance\":0.01500,"
+               "\"safety_hold\":%u,\"source\":\"io\"}\n",
+               frame_prefix,
+               count,
+               t_ms,
+               x,
+               y,
+               z,
+               yaw,
+               pitch,
+               roll,
+               grip,
+               safety_hold);
+    }
+
+    return count > 0 ? 0 : 1;
+}
+
 static int record_hand_keyframes(FILE *input)
 {
     char line[1024];
@@ -514,6 +669,8 @@ int main(int argc, char **argv)
     int slot_stream = 0;
     int hand_stream = 0;
     int hand_record = 0;
+    int io_hand_adapter = 0;
+    const char *frame_prefix = "observed";
     int i;
 
     options.user = &options;
@@ -525,6 +682,10 @@ int main(int argc, char **argv)
             hand_stream = 1;
         } else if (strcmp(argv[i], "--record-hand-keyframes") == 0) {
             hand_record = 1;
+        } else if (strcmp(argv[i], "--io-hand-adapter") == 0) {
+            io_hand_adapter = 1;
+        } else if (strcmp(argv[i], "--frame-prefix") == 0 && i + 1 < argc) {
+            frame_prefix = argv[++i];
         } else if (strcmp(argv[i], "--loop") == 0 && i + 1 < argc) {
             if (parse_u32(argv[++i], &slot_loops) != 0 || slot_loops == 0) {
                 return 2;
@@ -560,6 +721,14 @@ int main(int argc, char **argv)
 
     if (hand_record) {
         int result = record_hand_keyframes(input);
+        if (input != stdin) {
+            fclose(input);
+        }
+        return result;
+    }
+
+    if (io_hand_adapter) {
+        int result = adapt_io_to_hand(input, frame_prefix);
         if (input != stdin) {
             fclose(input);
         }
