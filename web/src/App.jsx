@@ -69,6 +69,7 @@ const triggerImportTestPath = "/local_trigger_scenarios/twenty_slot_interleaved.
 const site = "demo";
 const node = "linux-sim-001";
 const maxSlots = 20;
+const eventLogLimit = 15;
 
 function buildInitialSlots() {
   return initialModules.flatMap((module) => buildModuleSlots(module.slotNo, module.type));
@@ -350,7 +351,7 @@ export default function App() {
         t_ms: timeMs
       }
     };
-    setEvents((current) => [event, ...current].slice(0, 100));
+    setEvents((current) => [event, ...current].slice(0, eventLogLimit));
   }
 
   function setSlotValue(slotNoText, typeLabel, pointText, valueText, timeMs) {

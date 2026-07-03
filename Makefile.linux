@@ -6,7 +6,7 @@ OUTDIR  ?= build_out
 LIB := $(OUTDIR)/liblinux_io_device_simul.a
 OBJS := $(OUTDIR)/src/io_device_simul.o
 
-.PHONY: all structure-audit direct-test test zephyr-metadata demo prepare-local-trigger-scenarios web-install web-build web web-render-check web-io-script-check web-import-export-run-check web-trigger-import-check clean
+.PHONY: all structure-audit direct-test test zephyr-metadata demo prepare-local-trigger-scenarios hand-keyframe-script-check web-install web-build web web-render-check web-io-script-check web-event-log-limit-check web-import-export-run-check web-trigger-import-check clean
 
 all: $(LIB) $(OUTDIR)/linux_io_device_simul
 
@@ -34,7 +34,9 @@ zephyr-metadata:
 direct-test: $(OUTDIR)/unit_io_device_simul $(OUTDIR)/linux_io_device_simul structure-audit zephyr-metadata
 	$(OUTDIR)/unit_io_device_simul
 	OUTDIR=$(OUTDIR) sh scripts/test_linux_io_device_simul.sh
+	OUTDIR=$(OUTDIR) sh scripts/test_hand_keyframe_script.sh
 	sh scripts/test_web_assets.sh
+	sh scripts/test_web_event_log_limit.sh
 
 test: direct-test
 
@@ -43,6 +45,9 @@ demo: $(OUTDIR)/linux_io_device_simul
 
 prepare-local-trigger-scenarios:
 	./scripts/prepare_local_trigger_scenarios.sh
+
+hand-keyframe-script-check: $(OUTDIR)/linux_io_device_simul
+	OUTDIR=$(OUTDIR) sh scripts/test_hand_keyframe_script.sh
 
 web-install:
 	npm --prefix web install
@@ -58,6 +63,9 @@ web-render-check:
 
 web-io-script-check:
 	OUTDIR=$(OUTDIR) ./scripts/test_web_io_script.sh
+
+web-event-log-limit-check:
+	sh scripts/test_web_event_log_limit.sh
 
 web-import-export-run-check:
 	OUTDIR=$(OUTDIR) ./scripts/test_web_import_export_run.sh

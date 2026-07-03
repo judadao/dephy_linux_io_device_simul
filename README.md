@@ -86,6 +86,12 @@ build_out/linux_io_device_simul --hand-stream --loop 2 --sample-ms 300 scripts/h
 The stream emits one JSON keyframe anchor every simulated 300ms. The implement
 repo loads these anchors and applies its loaded prediction policy between them.
 
+The keyframe script contract is covered by:
+
+```sh
+make -f Makefile.linux hand-keyframe-script-check
+```
+
 ## Recording Hand Keyframes
 
 The simulator can also record hand keyframe events back into CSV. This is the
@@ -242,6 +248,8 @@ Trigger controls:
 
 The web IO script check opens `http://127.0.0.1:8088/?test=io-script` and
 verifies that a DI, AI, and RELAY command produce event log output.
+The web event stream keeps only the latest 15 entries because realtime demo IO
+is test data for display, not a persistent history log.
 
 Local trigger scenarios are generated into ignored folders:
 
